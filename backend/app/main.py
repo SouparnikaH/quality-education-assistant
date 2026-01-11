@@ -38,11 +38,16 @@ db = Database()
 # Initialize Gemini API
 try:
     import google.generativeai as genai
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    llm = genai.GenerativeModel('gemini-2.0-flash')
-    print("Gemini API initialized successfully")
+    api_key = os.getenv("GEMINI_API_KEY")
+    if api_key and not api_key.startswith("your_"):
+        genai.configure(api_key=api_key)
+        llm = genai.GenerativeModel('gemini-2.0-flash')
+        print("✅ Gemini API initialized successfully")
+    else:
+        print("⚠️  Gemini API key not configured (using placeholder)")
+        llm = None
 except Exception as e:
-    print(f"Gemini API initialization failed: {e}")
+    print(f"❌ Gemini API initialization failed: {e}")
     llm = None
 
 # In-memory session storage
@@ -217,12 +222,55 @@ def extract_student_info(message: str, current_info: dict = None) -> dict:
     return info
 
 def generate_education_response(query: str, category: str, context: dict = None, original_query: str = None) -> str:
-    """Generate comprehensive education guidance using quality_education.ipynb trained responses"""
+    """Generate intelligent education guidance using Gemini AI with context awareness"""
 
-    # Use pre-built quality_education.ipynb style responses for fast, reliable answers
-    # Maintain field context and format in bullet points as requested
+    # Try to use Gemini AI for dynamic, intelligent responses
+    if llm:
+        try:
+            # Build context-aware prompt
+            student_info = ""
+            if context:
+                name = context.get('name', '')
+                age = context.get('age', 0)
+                interest = context.get('interest', '')
 
-    # Determine field context
+                if name:
+                    student_info += f"Student Name: {name}\n"
+                if age:
+                    student_info += f"Student Age: {age}\n"
+                if interest:
+                    student_info += f"Field of Interest: {interest}\n"
+
+            # Create intelligent prompt for Gemini
+            response_prompt = f"""You are an expert AI education counselor with extensive knowledge about careers, courses, and educational guidance.
+
+{student_info}
+Student Query: "{query}"
+Category: {category}
+
+Please provide a comprehensive, helpful, and personalized response to this student's educational query. Format your response using bullet points and clear sections where appropriate. Be specific, actionable, and encouraging.
+
+Focus on:
+- Practical advice and actionable steps
+- Relevant resources and next steps
+- Career insights and requirements
+- Encouragement and motivation
+
+Keep your response conversational but informative, and adapt your tone to be appropriate for the student's age and interests."""
+
+            response = llm.generate_content(response_prompt)
+            ai_response = response.text.strip()
+
+            # Ensure response is properly formatted
+            if ai_response:
+                return ai_response
+
+        except Exception as e:
+            print(f"❌ Gemini response generation failed: {e}")
+            # Fall back to static responses if Gemini fails
+
+    # Fallback to static responses if Gemini is not available
+    # Determine field context for fallback responses
     field_context = ""
     if context and context.get('interest'):
         interest = context.get('interest', '').lower()
@@ -717,9 +765,12 @@ async def chat(request: ChatRequest):
 
         else:  # completed or any other stage
             # Continue providing recommendations based on stored info
+            # Allow ongoing conversations after initial setup
             context = session_data["student_info"]
             category = classify_education_query(user_message, context)
             response_text = generate_education_response(user_message, category, context)
+
+            # Keep the conversation going - don't change stage
 
         # Store message history
         session_data["messages"].append({
