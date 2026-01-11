@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "description": "Frontend for Quality Education AI Assistant",
   "main": "index.html",
+  "homepage": ".",
   "scripts": {
-    "build": "echo 'Build completed - using pre-built dist files'",
-    "dev": "echo 'Dev server not needed for deployment'"
+    "build": "echo 'Static files ready for deployment'",
+    "dev": "echo 'Static deployment - no dev server needed'"
   },
-  "keywords": ["education", "ai", "chatbot"],
+  "keywords": ["education", "ai", "chatbot", "react"],
   "author": "Quality Education Team",
   "license": "MIT"
 }
