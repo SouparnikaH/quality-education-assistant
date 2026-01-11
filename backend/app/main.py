@@ -17,15 +17,15 @@ app = FastAPI(title="Quality Education Chatbot API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        # Production URLs
-        "https://qualityeducationassistant.vercel.app",
-        "https://quality-education-assistant.onrender.com",
         # Development URLs
         "http://localhost:5173",
         "http://localhost:5178",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
-        "http://127.0.0.1:5178"
+        "http://127.0.0.1:5178",
+        # Production URLs
+        "https://qualityeducationassistant.vercel.app",
+        "https://quality-education-assistant.onrender.com"
     ],
     allow_credentials=True,
     allow_methods=["*"],
