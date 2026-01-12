@@ -2,6 +2,11 @@ import { useState, useRef, useEffect } from 'react'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8003'
 
+console.log('🔍 API_BASE_URL:', API_BASE_URL)
+console.log('🔍 VITE_API_URL:', import.meta.env.VITE_API_URL)
+console.log('🔍 NODE_ENV:', import.meta.env.NODE_ENV)
+console.log('🔍 MODE:', import.meta.env.MODE)
+
 function Chat() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -30,6 +35,7 @@ function Chat() {
     setMessages(prev => [...prev, newUserMessage])
 
     try {
+      console.log('📡 Making API call to:', `${API_BASE_URL}/chat`)
       const response = await fetch(`${API_BASE_URL}/chat`, {
         method: 'POST',
         headers: {
@@ -41,11 +47,17 @@ function Chat() {
         }),
       })
 
+      console.log('📡 Response status:', response.status)
+      console.log('📡 Response ok:', response.ok)
+
       if (!response.ok) {
-        throw new Error('Failed to send message')
+        const errorText = await response.text()
+        console.log('📡 Error response:', errorText)
+        throw new Error(`Failed to send message: ${response.status} ${errorText}`)
       }
 
       const data = await response.json()
+      console.log('📡 Success response:', data)
 
       // Update session ID if we got a new one
       if (data.session_id && !sessionId) {
