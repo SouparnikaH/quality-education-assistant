@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 
-const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://quality-education-assistant.onrender.com'
-  : 'http://127.0.0.1:8003'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8003'
 
 function Chat() {
   const [messages, setMessages] = useState([])

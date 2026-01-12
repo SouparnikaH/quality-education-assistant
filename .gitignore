@@ -91,6 +91,9 @@ jspm_packages/
 .env.test.local
 .env.production.local
 
+# Allow .env in frontend folder for Vite builds
+!frontend/.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
