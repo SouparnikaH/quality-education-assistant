@@ -42,12 +42,12 @@ try:
     if api_key and not api_key.startswith("your_"):
         genai.configure(api_key=api_key)
         llm = genai.GenerativeModel('gemini-2.0-flash')
-        print("✅ Gemini API initialized successfully")
+        print("Gemini API initialized successfully")
     else:
-        print("⚠️  Gemini API key not configured (using placeholder)")
+        print("Warning: Gemini API key not configured (using placeholder)")
         llm = None
 except Exception as e:
-    print(f"❌ Gemini API initialization failed: {e}")
+    print(f"Error: Gemini API initialization failed: {e}")
     llm = None
 
 # In-memory session storage
@@ -266,7 +266,7 @@ Keep your response conversational but informative, and adapt your tone to be app
                 return ai_response
 
         except Exception as e:
-            print(f"❌ Gemini response generation failed: {e}")
+            print(f"Error: Gemini response generation failed: {e}")
             # Fall back to static responses if Gemini fails
 
     # Fallback to static responses if Gemini is not available
