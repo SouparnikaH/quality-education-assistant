@@ -6,7 +6,7 @@ import uuid
 import time
 import os
 from dotenv import load_dotenv
-from .database import Database
+from app.database import Database
 
 # Load environment variables
 load_dotenv()
