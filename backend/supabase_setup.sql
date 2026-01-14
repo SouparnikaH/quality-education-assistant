@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS conversations (
 -- Create conversation_data table
 CREATE TABLE IF NOT EXISTS conversation_data (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    session_id TEXT NOT NULL,
+    session_id TEXT UNIQUE NOT NULL,
     student_name TEXT,
     student_age INTEGER,
     area_of_interest TEXT,
