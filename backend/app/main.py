@@ -870,3 +870,15 @@ async def reset(request: ResetRequest):
     except Exception as e:
         print(f"Error in reset endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Render deployment configuration
+# This ensures the app binds to Render's assigned PORT and listens on 0.0.0.0
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))  # Render provides PORT env var
+    uvicorn.run(
+        app,  # Use the app instance directly
+        host="0.0.0.0",  # Bind to all interfaces for Render
+        port=port,  # Use Render's assigned port
+        reload=False  # Disable reload in production
+    )
