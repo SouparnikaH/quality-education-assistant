@@ -655,8 +655,11 @@ async def root():
 async def chat(request: ChatRequest):
     """Handle education chat messages with field context awareness"""
     try:
+        print(f"Chat request received: message='{request.message}', session_id='{request.session_id}'")
+
         # Get or create session
         session_id = request.session_id or str(uuid.uuid4())
+        print(f"Using session_id: {session_id}")
 
         # Initialize or retrieve session data
         if session_id not in sessions:
@@ -841,7 +844,10 @@ async def chat(request: ChatRequest):
 
     except Exception as e:
         print(f"Error in chat endpoint: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error type: {type(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.post("/reset", response_model=ResetResponse)
 async def reset(request: ResetRequest):
