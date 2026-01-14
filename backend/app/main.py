@@ -232,9 +232,12 @@ def extract_student_info(message: str, current_info: dict = None) -> dict:
 def generate_education_response(query: str, category: str, context: dict = None, original_query: str = None) -> str:
     """Generate intelligent education guidance using Gemini AI with context awareness"""
 
+    print(f"Generating response for query: '{query}', category: '{category}', LLM available: {llm is not None}")
+
     # Try to use Gemini AI for dynamic, intelligent responses
     if llm:
         try:
+            print("Attempting to use Gemini AI for response generation...")
             # Build context-aware prompt
             student_info = ""
             if context:
@@ -271,11 +274,14 @@ Keep your response conversational but informative, and adapt your tone to be app
 
             # Ensure response is properly formatted
             if ai_response:
+                print("Gemini AI response generated successfully")
                 return ai_response
 
         except Exception as e:
             print(f"Error: Gemini response generation failed: {e}")
-            # Fall back to static responses if Gemini fails
+            print("Falling back to static responses...")
+
+    # Fallback to static responses if Gemini is not available or fails
 
     # Fallback to static responses if Gemini is not available
     # Determine field context for fallback responses
@@ -616,43 +622,88 @@ What specific career questions do you have?"""
 
 Remember, seeking help is a sign of strength, not weakness. You're not alone in this."""
 
-    else:  # general_education
-        return """**General Education Guidance**
-• **Study Skills**: Effective note-taking, time management, active reading
-• **Learning Strategies**: Different learning styles, memory techniques, critical thinking
-• **Academic Planning**: Course selection, degree planning, GPA management
-• **Research Skills**: Information literacy, source evaluation, academic writing
-• **Technology Tools**: Educational apps, online resources, productivity software
+    else:  # general_education or fallback
+        if "skill" in query.lower() or "need" in query.lower():
+            return """**Essential Study Skills & Requirements**
+• **Time Management**: Create schedules, prioritize tasks, avoid procrastination
+• **Note-Taking**: Use effective methods (Cornell, mind mapping, digital tools)
+• **Reading Techniques**: Active reading, SQ3R method, speed reading
+• **Memory Techniques**: Spaced repetition, mnemonic devices, visualization
+• **Critical Thinking**: Question assumptions, evaluate evidence, draw conclusions
 
-**Common Educational Challenges**
-• Motivation and procrastination
-• Test anxiety and performance pressure
-• Learning disabilities or difficulties
-• Time management and organization
-• Balancing multiple responsibilities
+**Academic Success Strategies**
+• Set SMART goals (Specific, Measurable, Achievable, Relevant, Time-bound)
+• Create a dedicated study space free from distractions
+• Use active recall and practice testing
+• Join study groups and peer learning communities
+• Maintain a healthy sleep schedule (7-9 hours per night)
 
-**Success Strategies**
-• Set clear, achievable goals
-• Create consistent study routines
-• Use active learning techniques
-• Seek help when needed (tutors, advisors)
-• Celebrate academic achievements
+**Digital Learning Tools**
+• **Organization**: Notion, Evernote, OneNote for notes and planning
+• **Flashcards**: Anki, Quizlet for memorization
+• **Time Tracking**: Forest app, Focus@Will for concentration
+• **Research**: Google Scholar, JSTOR, academic databases
+• **Collaboration**: Microsoft Teams, Slack for group work
 
-**Available Resources**
-• Academic tutoring services
-• Writing centers and labs
-• Library research assistance
-• Online learning platforms
-• Study skill workshops
+**Next Steps**
+• Assess your current study habits and identify areas for improvement
+• Start with one or two new techniques at a time
+• Track your progress and adjust as needed
+• Seek feedback from teachers or tutors"""
 
-**Technology for Learning**
-• Note-taking apps (Notion, Evernote)
-• Flashcard apps (Anki, Quizlet)
-• Time management tools (Forest, Focus@Will)
-• Online course platforms (Coursera, edX)
-• Research databases and libraries
+        elif "career" in query.lower() or "job" in query.lower():
+            return """**Career Exploration & Planning**
+• **Self-Assessment**: Identify your interests, skills, and values using career assessment tools
+• **Research**: Explore different career paths, job descriptions, and industry trends
+• **Networking**: Connect with professionals through LinkedIn, career fairs, and informational interviews
+• **Experience**: Gain relevant experience through internships, volunteer work, or part-time jobs
+• **Education**: Research degree requirements and program options
 
-What specific educational challenge are you facing?"""
+**Popular Career Fields**
+• **Technology**: Software development, data science, cybersecurity
+• **Healthcare**: Nursing, physical therapy, medical research
+• **Business**: Marketing, finance, management, entrepreneurship
+• **Education**: Teaching, counseling, educational administration
+• **Creative**: Graphic design, writing, digital media, performing arts
+
+**Career Development Steps**
+• Update your resume and LinkedIn profile
+• Build a professional network of contacts
+• Develop both hard and soft skills
+• Seek mentorship from experienced professionals
+• Set career goals and create an action plan
+
+**Resources for Career Planning**
+• Career counseling services at your school/university
+• Online platforms: LinkedIn, Indeed, Glassdoor
+• Career assessment tools: Myers-Briggs, StrengthsFinder
+• Professional organizations in your field of interest
+• Local workforce development centers
+
+What specific career questions do you have?"""
+
+        else:
+            return """**Education & Career Guidance**
+• **Academic Success**: Study skills, time management, learning strategies
+• **Career Exploration**: Self-assessment, research, networking, gaining experience
+• **Personal Development**: Goal setting, motivation, work-life balance
+• **Resource Access**: Tutoring, counseling, online learning platforms
+
+**I'm here to help with:**
+- Study techniques and academic challenges
+- Career exploration and planning
+- Course selection and degree programs
+- Test preparation and exam strategies
+- Motivation and goal setting
+
+**Popular Topics:**
+• How to improve study habits
+• Career options in different fields
+• Time management techniques
+• Dealing with academic stress
+• Finding the right college or program
+
+What specific question can I help you with today?"""
 
 @app.get("/")
 async def root():
@@ -669,15 +720,24 @@ async def chat(request: ChatRequest):
         session_id = request.session_id or str(uuid.uuid4())
         print(f"Using session_id: {session_id}")
 
+        # Debug: Print current sessions
+        print(f"Current sessions in memory: {list(sessions.keys())}")
+
         # Initialize or retrieve session data
         if session_id not in sessions:
+            print(f"Creating new session: {session_id}")
             sessions[session_id] = {
                 "student_info": {"name": "", "age": 0, "interest": "", "query": ""},
                 "conversation_stage": "greeting",  # greeting -> name -> age -> interest -> query -> recommendation
                 "messages": []
             }
+        else:
+            print(f"Retrieving existing session: {session_id}")
 
         session_data = sessions[session_id]
+        print(f"Current session stage: {session_data['conversation_stage']}")
+        print(f"Current student info: {session_data['student_info']}")
+
         user_message = request.message.strip()
 
         # Handle conversation flow based on current stage
