@@ -682,6 +682,11 @@ async def chat(request: ChatRequest):
                 session_data["student_info"]["name"] = extracted_info["name"]
                 response_text = f"Nice to meet you, {session_data['student_info']['name']}! How old are you?"
                 session_data["conversation_stage"] = "age"
+
+                # Save name to database immediately
+                db.save_conversation_state(session_id, {
+                    "student_name": session_data["student_info"]["name"]
+                })
             else:
                 response_text = "I didn't catch your name. Could you please tell me your name?"
 
@@ -692,6 +697,12 @@ async def chat(request: ChatRequest):
                 session_data["student_info"]["age"] = extracted_info["age"]
                 response_text = f"Great! At {session_data['student_info']['age']} years old, you have so many exciting educational opportunities ahead. What area interests you most? (e.g., Engineering, Medicine, Arts, Business, Science, Law, Education)"
                 session_data["conversation_stage"] = "interest"
+
+                # Save age to database immediately
+                db.save_conversation_state(session_id, {
+                    "student_name": session_data["student_info"]["name"],
+                    "student_age": session_data["student_info"]["age"]
+                })
             else:
                 # Try to extract age from this message
                 import re
@@ -702,6 +713,12 @@ async def chat(request: ChatRequest):
                         session_data["student_info"]["age"] = age
                         response_text = f"Great! At {age} years old, you have so many exciting educational opportunities ahead. What area interests you most? (e.g., Engineering, Medicine, Arts, Business, Science, Law, Education)"
                         session_data["conversation_stage"] = "interest"
+
+                        # Save age to database immediately
+                        db.save_conversation_state(session_id, {
+                            "student_name": session_data["student_info"]["name"],
+                            "student_age": age
+                        })
                     else:
                         response_text = "Please enter a valid age between 13 and 100."
                 else:
@@ -714,6 +731,13 @@ async def chat(request: ChatRequest):
                 session_data["student_info"]["interest"] = extracted_info["interest"]
                 response_text = f"Excellent choice! {session_data['student_info']['interest']} is a fascinating field. Now, what specific question or concern would you like help with regarding your education?"
                 session_data["conversation_stage"] = "query"
+
+                # Save interest to database immediately
+                db.save_conversation_state(session_id, {
+                    "student_name": session_data["student_info"]["name"],
+                    "student_age": session_data["student_info"]["age"],
+                    "area_of_interest": session_data["student_info"]["interest"]
+                })
             else:
                 # Check if user mentioned an interest in this message
                 interests = {
@@ -737,6 +761,13 @@ async def chat(request: ChatRequest):
                     session_data["student_info"]["interest"] = found_interest
                     response_text = f"Excellent choice! {found_interest} is a fascinating field. Now, what specific question or concern would you like help with regarding your education?"
                     session_data["conversation_stage"] = "query"
+
+                    # Save interest to database immediately
+                    db.save_conversation_state(session_id, {
+                        "student_name": session_data["student_info"]["name"],
+                        "student_age": session_data["student_info"]["age"],
+                        "area_of_interest": found_interest
+                    })
                 else:
                     response_text = "I didn't recognize that area of interest. Could you please choose from: Engineering, Medicine, Arts, Business, Science, Law, or Education?"
 

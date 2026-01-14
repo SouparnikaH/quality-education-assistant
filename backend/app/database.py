@@ -38,27 +38,33 @@ class Database:
                 "updated_at": "now()"
             }).execute()
 
-            # Only save when ALL required fields are present
-            has_all_fields = (
-                bool(state.get("student_name")) and
-                bool(state.get("student_age")) and
-                bool(state.get("area_of_interest")) and
-                bool(state.get("student_query")) and
-                bool(state.get("guidance_type"))
-            )
-
-            if has_all_fields:
-                self.client.table("conversation_data").insert({
+            # Save data incrementally as information becomes available
+            # At minimum, save name and session_id if available
+            if state.get("student_name"):
+                # Prepare data to save - only include fields that have values
+                data_to_save = {
                     "session_id": session_id,
                     "student_name": state.get("student_name"),
-                    "student_age": state.get("student_age"),
-                    "area_of_interest": state.get("area_of_interest"),
-                    "student_query": state.get("student_query"),
-                    "guidance_type": state.get("guidance_type"),
-                }).execute()
-                print(f"Conversation data saved for session: {session_id}")
+                }
+
+                # Add optional fields if they exist
+                if state.get("student_age"):
+                    data_to_save["student_age"] = state.get("student_age")
+                if state.get("area_of_interest"):
+                    data_to_save["area_of_interest"] = state.get("area_of_interest")
+                if state.get("student_query"):
+                    data_to_save["student_query"] = state.get("student_query")
+                if state.get("guidance_type"):
+                    data_to_save["guidance_type"] = state.get("guidance_type")
+
+                # Use upsert to update existing records or insert new ones
+                self.client.table("conversation_data").upsert(
+                    data_to_save,
+                    on_conflict="session_id"
+                ).execute()
+                print(f"Conversation data saved/updated for session: {session_id}")
             else:
-                print(f"Not all fields collected yet for session: {session_id}")
+                print(f"No student name collected yet for session: {session_id}")
 
         except Exception as e:
             print(f"Database error: {e}")
