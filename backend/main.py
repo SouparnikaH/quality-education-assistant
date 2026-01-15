@@ -43,19 +43,42 @@ app.add_middleware(
 # Initialize database
 db = Database()
 
-# Initialize Gemini API
+# Initialize Gemini API with fallback models
+llm = None
 try:
     import google.generativeai as genai
     api_key = os.getenv("GEMINI_API_KEY")
-    if api_key and not api_key.startswith("your_"):
+
+    if api_key and not api_key.startswith("your_") and not api_key.startswith("AIzaSyAlUIt0b7ew08vscFLB7F6nYREOHkEiH4A"):
         genai.configure(api_key=api_key)
-        llm = genai.GenerativeModel('gemini-2.0-flash')
-        print("Gemini API initialized successfully")
+
+        # Try different models in order of preference
+        models_to_try = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro', 'gemini-2.0-flash']
+
+        for model_name in models_to_try:
+            try:
+                llm = genai.GenerativeModel(model_name)
+                # Test the model with a simple request
+                test_response = llm.generate_content("Test")
+                if test_response and test_response.text:
+                    print(f"✅ Gemini API initialized successfully with model: {model_name}")
+                    break
+            except Exception as e:
+                print(f"⚠️  Model {model_name} failed: {str(e)[:100]}...")
+                llm = None
+                continue
+
+        if llm is None:
+            print("❌ All Gemini models failed - using static responses only")
+            print("💡 To enable AI responses, get a new API key from: https://aistudio.google.com/")
     else:
-        print("Warning: Gemini API key not configured (using placeholder)")
+        print("⚠️  Gemini API key not configured or using leaked key - using static responses")
+        print("💡 To enable AI responses, get a new API key from: https://aistudio.google.com/")
         llm = None
+
 except Exception as e:
-    print(f"Error: Gemini API initialization failed: {e}")
+    print(f"❌ Gemini API initialization failed: {str(e)[:100]}...")
+    print("💡 Using static responses - chatbot will still work without AI")
     llm = None
 
 # In-memory session storage
