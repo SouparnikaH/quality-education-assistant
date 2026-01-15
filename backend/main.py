@@ -24,6 +24,8 @@ app.add_middleware(
         "http://localhost:5176",
         "http://localhost:5177",
         "http://localhost:5178",
+        "http://localhost:5179",
+        "http://localhost:5180",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
@@ -31,6 +33,8 @@ app.add_middleware(
         "http://127.0.0.1:5176",
         "http://127.0.0.1:5177",
         "http://127.0.0.1:5178",
+        "http://127.0.0.1:5179",
+        "http://127.0.0.1:5180",
         # Production URLs
         "https://qualityeducationassistant.vercel.app",
         "https://quality-education-assistant.onrender.com"
@@ -61,24 +65,24 @@ try:
                 # Test the model with a simple request
                 test_response = llm.generate_content("Test")
                 if test_response and test_response.text:
-                    print(f"✅ Gemini API initialized successfully with model: {model_name}")
+                    print(f"SUCCESS: Gemini API initialized successfully with model: {model_name}")
                     break
             except Exception as e:
-                print(f"⚠️  Model {model_name} failed: {str(e)[:100]}...")
+                print(f"WARNING: Model {model_name} failed: {str(e)[:100]}...")
                 llm = None
                 continue
 
         if llm is None:
-            print("❌ All Gemini models failed - using static responses only")
-            print("💡 To enable AI responses, get a new API key from: https://aistudio.google.com/")
+            print("ERROR: All Gemini models failed - using static responses only")
+            print("HINT: To enable AI responses, get a new API key from: https://aistudio.google.com/")
     else:
-        print("⚠️  Gemini API key not configured or using leaked key - using static responses")
-        print("💡 To enable AI responses, get a new API key from: https://aistudio.google.com/")
+        print("WARNING: Gemini API key not configured or using leaked key - using static responses")
+        print("HINT: To enable AI responses, get a new API key from: https://aistudio.google.com/")
         llm = None
 
 except Exception as e:
-    print(f"❌ Gemini API initialization failed: {str(e)[:100]}...")
-    print("💡 Using static responses - chatbot will still work without AI")
+    print(f"ERROR: Gemini API initialization failed: {str(e)[:100]}...")
+    print("INFO: Using static responses - chatbot will still work without AI")
     llm = None
 
 # In-memory session storage
@@ -257,52 +261,67 @@ def generate_education_response(query: str, category: str, context: dict = None,
 
     print(f"Generating response for query: '{query}', category: '{category}', LLM available: {llm is not None}")
 
+    # Build personalized context
+    student_name = context.get('name', '') if context else ''
+    student_age = context.get('age', 0) if context else 0
+    student_interest = context.get('interest', '') if context else ''
+
     # Try to use Gemini AI for dynamic, intelligent responses
     if llm:
         try:
             print("Attempting to use Gemini AI for response generation...")
-            # Build context-aware prompt
-            student_info = ""
-            if context:
-                name = context.get('name', '')
-                age = context.get('age', 0)
-                interest = context.get('interest', '')
 
-                if name:
-                    student_info += f"Student Name: {name}\n"
-                if age:
-                    student_info += f"Student Age: {age}\n"
-                if interest:
-                    student_info += f"Field of Interest: {interest}\n"
+            # Create intelligent prompt for Gemini with personalized context
+            personalized_intro = ""
+            if student_name:
+                personalized_intro = f"Hello {student_name}! "
 
-            # Create intelligent prompt for Gemini
+            if student_age and student_age > 0:
+                if student_age < 18:
+                    tone_instruction = "Use an encouraging, supportive tone suitable for a younger student. Focus on building confidence and long-term planning."
+                elif student_age < 25:
+                    tone_instruction = "Use an energetic, practical tone suitable for a young adult exploring career options. Focus on immediate next steps and skill-building."
+                else:
+                    tone_instruction = "Use a professional, insightful tone suitable for someone considering career transitions or advancement."
+
             response_prompt = f"""You are an expert AI education counselor with extensive knowledge about careers, courses, and educational guidance.
 
-{student_info}
+{student_name and f'Student Name: {student_name}' or ''}
+{student_age and f'Student Age: {student_age}' or ''}
+{student_interest and f'Field of Interest: {student_interest}' or ''}
+
 Student Query: "{query}"
 Category: {category}
+{tone_instruction if 'tone_instruction' in locals() else ''}
 
-Please provide a comprehensive, helpful, and personalized response to this student's educational query. Format your response using bullet points and clear sections where appropriate. Be specific, actionable, and encouraging.
+Please provide a comprehensive, helpful, and highly personalized response to this student's educational query. Make it conversational and engaging while being informative.
 
-Focus on:
-- Practical advice and actionable steps
-- Relevant resources and next steps
-- Career insights and requirements
+Format your response using:
+- Clear sections with descriptive headers
+- Bullet points for lists and key information
+- Numbered steps where appropriate
+- Bold text for important terms or emphasis
+
+Include:
+- Direct, actionable advice
+- Specific examples relevant to their situation
+- Realistic expectations and timelines
 - Encouragement and motivation
+- Follow-up questions or next steps
 
-Keep your response conversational but informative, and adapt your tone to be appropriate for the student's age and interests."""
+Adapt your response based on their age, interests, and the specific nature of their question."""
 
             response = llm.generate_content(response_prompt)
             ai_response = response.text.strip()
 
             # Ensure response is properly formatted
-            if ai_response:
+            if ai_response and len(ai_response) > 50:  # Ensure meaningful response
                 print("Gemini AI response generated successfully")
-                return ai_response
+                return f"{personalized_intro}{ai_response}"
 
         except Exception as e:
             print(f"Error: Gemini response generation failed: {e}")
-            print("Falling back to static responses...")
+            print("Falling back to enhanced static responses...")
 
     # Fallback to static responses if Gemini is not available or fails
 
@@ -324,62 +343,191 @@ Keep your response conversational but informative, and adapt your tone to be app
         elif 'law' in interest or 'legal' in interest:
             field_context = "law"
 
+    # Create personalized introduction
+    personalized_intro = ""
+    if context and context.get('name'):
+        personalized_intro = f"Hello {context['name']}! "
+
+    if context and context.get('age') and context.get('age') > 0:
+        if context['age'] < 18:
+            age_context = "as a young person exploring your future"
+        elif context['age'] < 25:
+            age_context = "as someone starting your educational journey"
+        else:
+            age_context = "with your experience and perspective"
+    else:
+        age_context = "on your educational path"
+
     # Provide field-specific responses based on context
     if field_context == "engineering":
         if "skill" in query.lower() or "need" in query.lower():
-            return """**Engineering Skills Required**
-• **Technical Skills**: Mathematics, physics, computer programming, CAD software
-• **Problem-Solving**: Analytical thinking, logical reasoning, creative solutions
+            age_specific_advice = ""
+            if context and context.get('age'):
+                if context['age'] < 18:
+                    age_specific_advice = """
+**For Your Age Group:**
+• Focus on high school STEM courses (Physics, Calculus, Computer Science)
+• Participate in science fairs and robotics clubs
+• Consider summer engineering camps or online courses
+• Build a strong foundation in mathematics and physics"""
+                elif context['age'] < 22:
+                    age_specific_advice = """
+**For College Students:**
+• Take introductory engineering courses to explore specializations
+• Join engineering student organizations on campus
+• Seek undergraduate research opportunities
+• Consider co-op or internship programs"""
+                else:
+                    age_specific_advice = """
+**For Career Changers:**
+• Assess your transferable skills from previous experience
+• Consider bridge programs or certifications
+• Network with engineering professionals
+• Start with entry-level positions or apprenticeships"""
+
+            return f"""{personalized_intro}Based on your interest in engineering {age_context}, here are the essential skills and requirements you'll need:
+
+**Core Technical Skills**
+• **Mathematics**: Calculus, Differential Equations, Linear Algebra, Statistics
+• **Physics**: Mechanics, Thermodynamics, Electricity & Magnetism, Materials Science
+• **Computer Programming**: Python, C/C++, MATLAB, Java (varies by specialization)
+• **Engineering Fundamentals**: Statics, Dynamics, Fluid Mechanics, Heat Transfer
+
+**Essential Soft Skills**
+• **Problem-Solving**: Analytical thinking, creative solutions, systems thinking
 • **Communication**: Technical writing, presentations, teamwork
 • **Project Management**: Time management, organization, leadership
-• **Specialized Tools**: Industry-specific software (MATLAB, AutoCAD, SolidWorks)
+• **Critical Thinking**: Data analysis, decision-making, ethical reasoning
 
-**Education Requirements**
-• Bachelor's degree in chosen engineering field (4 years)
-• Master's degree often preferred for advanced positions
-• Professional Engineer (PE) license for many roles
-• Continuous learning through certifications
+**Specialized Tools & Software**
+• **CAD Software**: AutoCAD, SolidWorks, CATIA, Inventor
+• **Analysis Tools**: MATLAB, ANSYS, COMSOL, LabVIEW
+• **Programming**: Python, MATLAB, C++, JavaScript
+• **Industry-Specific**: PLC programming, robotics software, simulation tools
 
-**Key Competencies**
-• Attention to detail and precision
-• Ability to work under pressure
-• Adaptability to new technologies
-• Ethical decision-making
+**Education Pathways**
+• **Bachelor's Degree**: 4-year program in your chosen engineering field
+• **Master's Degree**: Often preferred for advanced positions (2 years)
+• **Professional Licenses**: PE (Professional Engineer) license for many roles
+• **Certifications**: Industry-specific credentials (AWS, PMP, etc.)
 
-**Next Steps**
-• Take STEM courses in high school
-• Consider engineering internships
-• Join engineering societies (ASME, IEEE)
-• Develop strong math and science foundation"""
+**Key Competencies for Success**
+• Attention to detail and precision in work
+• Ability to work under pressure and meet deadlines
+• Adaptability to rapidly changing technologies
+• Strong work ethic and commitment to excellence
+• Continuous learning mindset{age_specific_advice}
+
+**Recommended Next Steps**
+• Research different engineering specializations to find your passion
+• Build a strong foundation in mathematics and physics
+• Gain practical experience through internships or projects
+• Connect with engineering professionals for mentorship
+• Consider joining engineering societies for networking and resources
+
+What specific engineering field interests you most, or would you like more details about any of these areas?"""
 
         elif "job" in query.lower() or "career" in query.lower():
-            return """**Engineering Career Opportunities**
-• **Civil Engineering**: Infrastructure design, construction management ($80K-$120K+)
-• **Mechanical Engineering**: Product design, manufacturing, automotive ($75K-$110K+)
-• **Electrical Engineering**: Power systems, electronics, telecommunications ($80K-$115K+)
-• **Computer Engineering**: Software development, hardware design ($85K-$130K+)
-• **Chemical Engineering**: Process design, pharmaceuticals, materials ($80K-$120K+)
-• **Aerospace Engineering**: Aircraft/spacecraft design, defense ($85K-$125K+)
-• **Biomedical Engineering**: Medical devices, healthcare technology ($75K-$115K+)
-• **Industrial Engineering**: Process optimization, quality control ($75K-$105K+)
+            career_focus = ""
+            if context and context.get('age'):
+                if context['age'] < 18:
+                    career_focus = """
+**Focus for High School Students:**
+• Research engineering fields through online resources and career days
+• Shadow engineers or participate in engineering internships
+• Build a strong academic foundation for college admissions
+• Consider engineering-focused summer programs"""
+                elif context['age'] < 22:
+                    career_focus = """
+**Focus for College Students:**
+• Explore different engineering specializations through coursework
+• Gain practical experience through internships and co-ops
+• Join professional engineering societies as a student member
+• Develop both technical and soft skills for career readiness"""
+                else:
+                    career_focus = """
+**Focus for Career Changers:**
+• Assess transferable skills from your previous career
+• Consider accelerated engineering programs or certifications
+• Leverage your professional network for engineering opportunities
+• Start with entry-level positions to gain engineering experience"""
 
-**Growth Industries**
-• Renewable energy and sustainability
-• Artificial intelligence and automation
-• Biotechnology and healthcare
-• Space exploration and defense
+            return f"""{personalized_intro}Engineering offers diverse and rewarding career opportunities {age_context}. Here are the main engineering career paths and their characteristics:
 
-**Career Progression**
-• Entry-level engineer (0-3 years)
-• Senior engineer/project manager (3-7 years)
-• Engineering manager/director (7+ years)
-• Executive leadership roles
+**Major Engineering Disciplines**
 
-**Work Environment**
-• Office, laboratory, or field settings
-• Collaborative team environments
+**🏗️ Civil Engineering** - Infrastructure & Construction
+• Design and oversee construction of buildings, bridges, roads, and water systems
+• Specializations: Structural, Environmental, Transportation, Geotechnical
+• Salary Range: $75K-$120K+ annually
+• Work Settings: Construction sites, offices, government agencies
+
+**⚙️ Mechanical Engineering** - Machines & Systems
+• Design, develop, and test mechanical systems and machines
+• Specializations: Automotive, HVAC, Robotics, Manufacturing
+• Salary Range: $75K-$115K+ annually
+• Work Settings: Manufacturing plants, R&D labs, automotive companies
+
+**⚡ Electrical Engineering** - Power & Electronics
+• Design electrical systems, power generation, and electronic devices
+• Specializations: Power Systems, Controls, Communications, Microelectronics
+• Salary Range: $80K-$120K+ annually
+• Work Settings: Utilities, electronics companies, tech firms
+
+**💻 Computer Engineering** - Hardware/Software Integration
+• Develop computer hardware and software systems
+• Specializations: Embedded Systems, Cybersecurity, AI/ML Hardware
+• Salary Range: $85K-$140K+ annually
+• Work Settings: Tech companies, semiconductor firms, research labs
+
+**🧪 Chemical Engineering** - Process & Materials
+• Design processes for chemical manufacturing and materials development
+• Specializations: Pharmaceuticals, Petrochemicals, Biotechnology, Nanotechnology
+• Salary Range: $80K-$125K+ annually
+• Work Settings: Chemical plants, pharmaceutical companies, research facilities
+
+**🚀 Aerospace Engineering** - Aircraft & Spacecraft
+• Design aircraft, spacecraft, and propulsion systems
+• Specializations: Aerodynamics, Propulsion, Avionics, Space Systems
+• Salary Range: $85K-$130K+ annually
+• Work Settings: Aerospace companies, defense contractors, NASA
+
+**🏥 Biomedical Engineering** - Medical Technology
+• Develop medical devices, diagnostic equipment, and healthcare solutions
+• Specializations: Medical Imaging, Prosthetics, Drug Delivery Systems
+• Salary Range: $75K-$115K+ annually
+• Work Settings: Medical device companies, hospitals, research institutions
+
+**📊 Industrial Engineering** - Process Optimization
+• Optimize manufacturing processes and systems for efficiency
+• Specializations: Quality Control, Supply Chain, Operations Research
+• Salary Range: $75K-$110K+ annually
+• Work Settings: Manufacturing firms, consulting companies, logistics
+
+**High-Growth Engineering Sectors**
+• **Renewable Energy**: Solar, wind, battery technology
+• **Artificial Intelligence**: Machine learning hardware, autonomous systems
+• **Biotechnology**: Medical devices, genetic engineering
+• **Space Exploration**: Commercial spaceflight, satellite technology
+• **Cybersecurity**: Secure system design and implementation
+
+**Career Progression Path**
+• **Entry Level (0-3 years)**: Junior Engineer, Design Engineer
+• **Mid Level (3-7 years)**: Senior Engineer, Project Engineer, Technical Lead
+• **Senior Level (7-15 years)**: Engineering Manager, Principal Engineer
+• **Executive Level (15+ years)**: Director, VP of Engineering, CTO
+
+**Work Environment Characteristics**
+• Collaborative team-based projects
+• Mix of office work, lab testing, and field work
 • Research and development opportunities
-• Global project opportunities"""
+• Global project teams and travel potential
+• Continuous learning and skill development{career_focus}
+
+**Choosing Your Engineering Path**
+Consider your interests, strengths, and market demand when selecting a specialization. Many engineers work in interdisciplinary teams, so you'll have opportunities to collaborate across fields. The key is finding an area that excites you while offering good career prospects.
+
+Which engineering field interests you most, or would you like more details about any of these career paths?"""
 
         elif "salary" in query.lower() or "earn" in query.lower() or "pay" in query.lower():
             return """**Engineering Salary Ranges**
